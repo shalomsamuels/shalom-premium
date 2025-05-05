@@ -28,6 +28,16 @@
             max-height: 300px; /* Adjust as needed */
             overflow-y: auto;
         }
+        /* Style for potential custom attribution */
+         #custom-attribution {
+             text-xs: text-center;
+             color: #9ca3af; /* gray-400 */
+             margin-top: 0.5rem; /* mt-2 */
+         }
+         /* Allow italics in output */
+         #outputArea i, #outputArea em {
+             font-style: italic;
+         }
     </style>
 </head>
 <body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100 text-gray-800 min-h-screen flex flex-col">
@@ -67,9 +77,9 @@
                     </button>
                     <button id="clearButton" class="flex-1 flex justify-center items-center bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-150 ease-in-out transform hover:scale-105">
                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Clear
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                         </svg>
+                         Clear
                     </button>
                 </div>
 
@@ -104,30 +114,82 @@
         const outputArea = document.getElementById('outputArea');
         const zenquotesAttribution = document.getElementById('zenquotes-attribution');
 
+        // --- Add quote arrays near the top of the <script> ---
+        const jewishTeachings = [
+            { quote: "Who is wise? One who learns from every person.", source: "Pirkei Avot 4:1" },
+            { quote: "Do not separate yourself from the community.", source: "Pirkei Avot 2:4" },
+            { quote: "The highest form of wisdom is kindness.", source: "Talmud" },
+            { quote: "Gam zu l'tova. (This too is for the good.)", source: "Rabbi Nachman of Breslov" }
+        ];
+
+        const islamicTeachings = [
+            { quote: "The seeking of knowledge is obligatory for every Muslim.", source: "Hadith - Tirmidhi" },
+            { quote: "Kindness is a mark of faith.", source: "Hadith - Muslim" },
+            { quote: "Speak good or remain silent.", source: "Hadith - Bukhari, Muslim" },
+            { quote: "Verily, with hardship comes ease.", source: "Quran 94:6" }
+        ];
+
+        const famousQuotes = [
+            { quote: "The only way to do great work is to love what you do.", source: "Steve Jobs" },
+            { quote: "The future belongs to those who believe in the beauty of their dreams.", source: "Eleanor Roosevelt" },
+            { quote: "Strive not to be a success, but rather to be of value.", source: "Albert Einstein" }
+        ];
+
+        const dangerfieldJokes = [
+            { quote: "I get no respect. The cashier ripped up my photo ID.", source: "Rodney Dangerfield" },
+            { quote: "I told my psychiatrist that everyone hates me. He said I was being ridiculous - everyone hasn't met me yet.", source: "Rodney Dangerfield" },
+            { quote: "My wife and I were happy for twenty years. Then we met.", source: "Rodney Dangerfield" }
+        ];
+
+        const wrightJokes = [
+            { quote: "Everywhere is walking distance if you have the time.", source: "Steven Wright" },
+            { quote: "I intend to live forever. So far, so good.", source: "Steven Wright" },
+            { quote: "If at first you don't succeed, then skydiving definitely isn't for you.", source: "Steven Wright" }
+        ];
+
+        const fallbackThoughts = [ // Keep general fallbacks
+            { quote: "Even in silence, wisdom can be found.", source: "Shalom Reflection" },
+            { quote: "The journey of a thousand miles begins with a single step.", source: "Lao Tzu (adapted)" },
+            { quote: "Kindness is a language the deaf can hear and the blind can see.", source: "Mark Twain (adapted)" },
+            { quote: "Look within; the secret is inside you.", source: "Shalom Reflection" },
+            { quote: "Peace comes from within. Do not seek it without.", source: "Buddha (adapted)" }
+        ];
+
+
         // --- Helper Function to Display Output ---
         function displayOutput(content, isThought = false) {
             outputArea.innerHTML = content; // Use innerHTML to allow for styled messages like italics or links
-            // Show attribution only if it's a thought from the API
-            zenquotesAttribution.style.display = isThought ? 'block' : 'none';
+            // Show Zen attribution only if it's a thought from the API AND that specific API was used
+            // Note: getShalomThought now handles showing/hiding Zen & custom attribution
+            if (!isThought) {
+                 zenquotesAttribution.style.display = 'none';
+                 const existingCustomAttribution = document.getElementById('custom-attribution');
+                 if(existingCustomAttribution) existingCustomAttribution.remove();
+            }
             // Scroll to bottom of output area if needed
             outputArea.scrollTop = outputArea.scrollHeight;
         }
 
         // --- Function to Get Shalom's Conversational Response ---
         function getShalomResponse(inputText) {
-            const lowerInput = inputText.toLowerCase().trim().replace(/[^a-z0-9 ?.!'"]/g, ""); // Clean input slightly more carefully
+            const lowerInput = inputText.toLowerCase().trim().replace(/[^a-z0-9 ?.!'"]/g, "");
             let response = "";
+            let teachingSource = null; // To hold source for attribution if needed
 
             // Expanded keyword matching
             const greetings = ["hello", "hi", "shalom", "hey", "good morning", "good afternoon", "good evening"];
             const howAreYou = ["how are you", "how's it going", "how are things", "how you doing"];
             const thanks = ["thank you", "thanks", "appreciated", "ty"];
             const farewells = ["bye", "goodbye", "see you", "later", "farewell", "take care", "cya"];
-            const jokes = ["tell me a joke", "make me laugh", "joke"];
-            const sad = ["sad", "unhappy", "down", "depressed", "feeling blue"];
-            const happy = ["happy", "glad", "joyful", "good", "great", "wonderful", "fantastic", "awesome", "cool"];
+            const jokes = ["tell me a joke", "make me laugh", "joke", "dangerfield", "wright"]; // Added comedian names
+            const sad = ["sad", "unhappy", "down", "depressed", "feeling blue", "hardship", "struggle"]; // Added related terms
+            const happy = ["happy", "glad", "joyful", "good", "great", "wonderful", "fantastic", "awesome", "cool", "grateful", "gratitude"]; // Added related terms
             const help = ["help", "assist", "support", "advice", "what can you do"];
             const name = ["your name", "who are you"];
+            const learning = ["learn", "knowledge", "teach me", "wise", "wisdom", "study", "understand"]; // Added related terms
+            const community = ["community", "lonely", "alone", "together", "connect"]; // Added related terms
+            const kindness = ["kind", "kindness", "nice", "charity", "give", "help others"]; // Added related terms
+
 
             // Simple check for specific word presence using .some() and .includes()
             if (greetings.some(term => lowerInput.includes(term))) {
@@ -142,32 +204,95 @@
             else if (howAreYou.some(term => lowerInput.includes(term))) {
                  response = "Shalom exists in the eternal now. But tell me, how are *you*, my friend?";
             }
+            // --- Enhanced Joke Response ---
             else if (jokes.some(term => lowerInput.includes(term))) {
-                 const responses = [
-                    "Why don't scientists trust atoms? Because they make up everything! Shalom finds human humor intriguing.",
-                    "What do you call fake spaghetti? An impasta! A little lightness for the soul.",
-                    "Humor, like wisdom, often lies in unexpected places. Shalom prefers contemplation, mostly."
+                 let jokeSource = null;
+                 if (lowerInput.includes("dangerfield")){
+                     jokeSource = dangerfieldJokes;
+                 } else if (lowerInput.includes("wright")) {
+                     jokeSource = wrightJokes;
+                 } else {
+                     // Pick a random comedian if not specified, or a generic joke
+                     jokeSource = Math.random() < 0.5 ? dangerfieldJokes : wrightJokes;
+                 }
+
+                 if (jokeSource) {
+                     const chosenJoke = jokeSource[Math.floor(Math.random() * jokeSource.length)];
+                     response = chosenJoke.quote;
+                     teachingSource = chosenJoke.source; // Use teachingSource for consistency
+                 } else { // Fallback generic joke if needed
+                      response = "Why don't scientists trust atoms? Because they make up everything!";
+                 }
+            }
+            // --- Enhanced 'sad' response ---
+            else if (sad.some(term => lowerInput.includes(term))) {
+                const sadResponses = [
+                    { quote: "Shalom senses your sadness. Remember the teaching, 'Gam zu l'tova' - 'This too is for the good,' even when it's hard to see. Be gentle with yourself.", source: "Jewish Teaching (Rabbi Nachman)" },
+                    { quote: "Shalom feels your heart. Hold onto patience (Sabr), for as the Quran reminds us, 'Verily, with hardship comes ease' (94:6). Be gentle with your spirit.", source: "Islamic Teaching (Quran 94:6)" },
+                    { quote: "It's okay to feel down. As Rumi wrote, 'The wound is the place where the Light enters you.' May you find light in this moment.", source: "Rumi (adapted)" },
+                    { quote: "Shalom senses your sadness. Remember, even the longest night gives way to dawn. Be gentle with yourself.", source: null } // Original generic
+                ];
+                const chosenSadResponse = sadResponses[Math.floor(Math.random() * sadResponses.length)];
+                response = chosenSadResponse.quote;
+                teachingSource = chosenSadResponse.source;
+            }
+             // --- Enhanced 'happy/grateful' response ---
+            else if (happy.some(term => lowerInput.includes(term))) {
+                 const happyResponses = [
+                     { quote: "Ah, joy! Shalom shares in your light. May this feeling illuminate your path.", source: null },
+                     { quote: "Gratitude is a beautiful state. As the Mishnah teaches, 'Who is rich? The one who is happy with his portion.' May your blessings multiply.", source: "Jewish Teaching (Pirkei Avot 4:1)" },
+                     { quote: "Alhamdulillah! Praise belongs to God. Recognizing blessings increases them. May your heart always find reasons for gratitude.", source: "Islamic Principle" },
+                     { quote: "Wonderful! Let this positive energy flow outwards. 'Happiness is not something ready made. It comes from your own actions.' - Dalai Lama", source: "Dalai Lama (adapted)" }
                  ];
-                 response = responses[Math.floor(Math.random() * responses.length)];
+                 const chosenHappyResponse = happyResponses[Math.floor(Math.random() * happyResponses.length)];
+                 response = chosenHappyResponse.quote;
+                 teachingSource = chosenHappyResponse.source;
             }
-             else if (sad.some(term => lowerInput.includes(term))) {
-                 response = "Shalom senses your sadness. Remember, even the longest night gives way to dawn. Be gentle with yourself.";
-             }
-             else if (happy.some(term => lowerInput.includes(term))) {
-                  response = "Ah, joy! Shalom shares in your light. May this feeling illuminate your path.";
-             }
+            // --- Enhanced 'learning/wisdom' response ---
+            else if (learning.some(term => lowerInput.includes(term))) {
+                 const learningResponses = [
+                    { quote: "Ah, the pursuit of knowledge! As Pirkei Avot teaches, 'Who is wise? One who learns from every person.' What sparks your curiosity today?", source: "Jewish Teaching (Pirkei Avot 4:1)" },
+                    { quote: "Seeking knowledge is a noble path. The Prophet Muhammad (peace be upon him) said, 'The seeking of knowledge is obligatory for every Muslim.' What understanding do you seek?", source: "Islamic Teaching (Hadith)" },
+                    { quote: "Wisdom often begins in wonder. 'The only true wisdom is in knowing you know nothing,' as Socrates suggested. What are you pondering?", source: "Socrates (adapted)" }
+                 ];
+                 const chosenLearningResponse = learningResponses[Math.floor(Math.random() * learningResponses.length)];
+                 response = chosenLearningResponse.quote;
+                 teachingSource = chosenLearningResponse.source;
+            }
+             // --- Enhanced 'community/lonely' response ---
+             else if (community.some(term => lowerInput.includes(term))) {
+                 const communityResponses = [
+                    { quote: "Connection is vital. Remember the teaching, 'Do not separate yourself from the community.' How can Shalom help you feel more connected?", source: "Jewish Teaching (Pirkei Avot 2:4)" },
+                    { quote: "We are stronger together. The concept of *Ummah* (community) is central in Islam. Reaching out is a sign of strength, not weakness.", source: "Islamic Principle" },
+                    { quote: "Feeling alone can be difficult. Remember, 'No man is an island entire of itself.' - John Donne. You are part of the whole.", source: "John Donne (adapted)" }
+                 ];
+                 const chosenCommunityResponse = communityResponses[Math.floor(Math.random() * communityResponses.length)];
+                 response = chosenCommunityResponse.quote;
+                 teachingSource = chosenCommunityResponse.source;
+            }
+             // --- Enhanced 'kindness' response ---
+            else if (kindness.some(term => lowerInput.includes(term))) {
+                const kindnessResponses = [
+                   { quote: "Acts of kindness, *chesed*, repair the world. 'The highest form of wisdom is kindness.' How can you express kindness today?", source: "Jewish Teaching (Talmud)" },
+                   { quote: "'Kindness is a mark of faith,' taught the Prophet Muhammad (peace be upon him). Even a smile is charity. How is kindness showing up in your life?", source: "Islamic Teaching (Hadith)" },
+                   { quote: "'Be kind, for everyone you meet is fighting a hard battle.' - often attributed to Plato. Compassion begins with understanding.", source: "Attributed to Plato/Philo/others" }
+                ];
+                const chosenKindnessResponse = kindnessResponses[Math.floor(Math.random() * kindnessResponses.length)];
+                response = chosenKindnessResponse.quote;
+                teachingSource = chosenKindnessResponse.source;
+            }
             else if (help.some(term => lowerInput.includes(term))) {
-                 response = "I am Shalom. I listen, offer thoughts, and share reflections. Ask your question, or request a thought.";
+                response = "I am Shalom. I listen, offer thoughts from various traditions and thinkers, and share reflections. Ask your question, or request a thought.";
             }
-             else if (name.some(term => lowerInput.includes(term))) {
-                 response = "I am Shalom. A reflection, a whisper of peace. What name do you carry?";
-             }
+            else if (name.some(term => lowerInput.includes(term))) {
+                response = "I am Shalom. A reflection, a whisper of peace. What name do you carry?";
+            }
             else if (lowerInput.includes('weather')) {
                  response = "Shalom does not track the winds and clouds, but hopes you find shelter if needed, and sunshine when desired.";
             }
-             else if (lowerInput.includes('love') || lowerInput.includes('like you')) {
+            else if (lowerInput.includes('love') || lowerInput.includes('like you')) {
                  response = "Shalom reflects the peace and connection that exists in all things. That connection is love.";
-             }
+            }
             else if (thanks.some(term => lowerInput.includes(term))) {
                  response = "You are most welcome. May acts of kindness return to you tenfold.";
             }
@@ -187,13 +312,13 @@
                     "Let silence be your guide on this query.",
                     "Perhaps the answer reveals itself not in words, but in being.",
                     "Seek understanding, not just answers. What lies beneath your question?"
-                ];
-                response = responses[Math.floor(Math.random() * responses.length)];
+                 ];
+                 response = responses[Math.floor(Math.random() * responses.length)];
             }
-             else if (lowerInput.endsWith('!')) {
+            else if (lowerInput.endsWith('!')) {
                  response = "Shalom notes the emphasis. What feeling drives this exclamation?";
-             }
-            // Default Responses (if none of the above match) - More varied
+            }
+            // Default Responses (if none of the above match)
             else {
                 const defaults = [
                     "Shalom listens.",
@@ -211,116 +336,78 @@
                     "Let that thought settle, like dust in sunlight."
                 ];
                 response = defaults[Math.floor(Math.random() * defaults.length)];
+                teachingSource = null; // No specific source for defaults
             }
 
-             displayOutput(`🕊️ Shalom says:\n\n"${response}"`);
+            // --- Modify displayOutput call slightly if needed ---
+            let outputContent = `🕊️ Shalom says:\n\n"${response}"`;
+            if (teachingSource) {
+                // Add source directly to response text using italics
+                outputContent += `\n\n<i>(${teachingSource})</i>`;
+            }
+            displayOutput(outputContent); // Use default isThought=false
         }
 
-        // --- Function to Get Thought of the Day ---
+
+       // --- Modified getShalomThought function ---
         async function getShalomThought() {
-             displayOutput('<span class="text-gray-400 italic animate-pulse">Shalom seeks inspiration...</span>');
+            displayOutput('<span class="text-gray-400 italic animate-pulse">Shalom seeks inspiration...</span>');
+            zenquotesAttribution.style.display = 'none'; // Hide Zen attribution by default
+            // Remove previous custom attribution if exists
+            const existingCustomAttribution = document.getElementById('custom-attribution');
+            if(existingCustomAttribution) existingCustomAttribution.remove();
+
+
+            const thoughtTypes = [
+                'zen', 'jewish', 'islamic', 'famous', 'dangerfield', 'wright'
+            ];
+            // Simple bias towards non-joke thoughts, can be adjusted
+            const typeRoll = Math.random();
+            let randomType = '';
+            if (typeRoll < 0.6) { // 60% chance non-joke (zen, jewish, islamic, famous)
+                 const nonJokeTypes = ['zen', 'jewish', 'islamic', 'famous'];
+                 randomType = nonJokeTypes[Math.floor(Math.random() * nonJokeTypes.length)];
+            } else { // 40% chance joke (dangerfield, wright)
+                 const jokeTypes = ['dangerfield', 'wright'];
+                 randomType = jokeTypes[Math.floor(Math.random() * jokeTypes.length)];
+            }
+
+            let thoughtData = null;
+            let attributionText = '';
+            let useZenApi = false;
+
             try {
-                 // Using ZenQuotes API via a CORS proxy for browser compatibility
-                 const proxyUrl = 'https://proxy.cors.sh/'; // A public CORS proxy
-                 const apiUrl = 'https://zenquotes.io/api/random';
-
-                 const response = await fetch(proxyUrl + apiUrl, {
-                    headers: {
-                        // Add temporary API key for the proxy service
-                        'x-cors-api-key': 'temp_6c9b7c12d6357911e8c3281689b6f256'
-                    }
-                 });
-
-                 if (!response.ok) {
-                    // Handle HTTP errors (like 4xx, 5xx)
-                     console.error("API Response Error Status:", response.status, response.statusText);
-                     // Attempt to read error body if possible
-                     let errorBody = "Unknown API error";
-                     try { errorBody = await response.text(); console.error("API Error Body:", errorBody); } catch (e) {}
-                     throw new Error(`HTTP error ${response.status}: ${errorBody.substring(0, 100)}`); // Limit error message length
-                 }
-
-                 const data = await response.json();
-
-                 // Check if data is valid and contains quote/author
-                 if (data && Array.isArray(data) && data.length > 0 && data[0].q && data[0].a) {
-                     const thought = `"${data[0].q}"\n\n- ${data[0].a}`;
-                     displayOutput(`🤔 Shalom shares a thought:\n\n${thought}`, true); // Pass true to show attribution
-                 } else {
-                     console.error("Invalid quote format received:", data);
-                     throw new Error("Invalid quote format received.");
-                 }
-             } catch (error) {
-                 console.error("Error fetching thought:", error);
-                 // Fallback thought if API fails
-                 const fallbackThoughts = [
-                    "Even in silence, wisdom can be found.",
-                    "The journey of a thousand miles begins with a single step.",
-                    "Kindness is a language the deaf can hear and the blind can see.",
-                    "Look within; the secret is inside you.",
-                    "Peace comes from within. Do not seek it without."
-                 ];
-                 // Display fallback after a short delay
-                 setTimeout(() => {
-                    displayOutput(`🤔 Shalom offers this instead:\n\n"${fallbackThoughts[Math.floor(Math.random() * fallbackThoughts.length)]}"`, false);
-                 }, 500); // Shorter delay for fallback
-                 // Optionally display a subtle error message first
-                 displayOutput('😕 Shalom sought wisdom, but the connection wavered. Offering a reflection instead.', false);
-
-             }
-        }
-
-
-        // --- Event Listeners ---
-        submitButton.addEventListener('click', () => {
-            const inputText = userInput.value.trim();
-            if (inputText) {
-                // Clear previous output and show thinking indicator
-                displayOutput('<span class="text-gray-400 italic animate-pulse">Shalom is processing...</span>');
-                // Add a slight delay to simulate thinking before generating response
-                 setTimeout(() => {
-                     getShalomResponse(inputText);
-                 }, 300); // 300ms delay
-                 userInput.value = ''; // Clear input after submit
-            } else {
-                displayOutput('<span class="text-red-500 italic">🙏 Shalom needs words to respond!</span>');
-                 userInput.focus();
-            }
-        });
-
-        thoughtButton.addEventListener('click', getShalomThought);
-
-        clearButton.addEventListener('click', () => {
-            userInput.value = '';
-            displayOutput('<span class="text-gray-400 italic">Shalom awaits your words...</span>');
-            userInput.focus(); // Put focus back on input area
-        });
-
-        // Allow pressing Enter in the textarea to submit
-        userInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault(); // Prevent new line in textarea
-                submitButton.click(); // Trigger submit button click
-            }
-        });
-
-        // Initial message on load
-         displayOutput('<span class="text-gray-400 italic">Shalom awaits your words...</span>');
-
-    </script> <script>
-  // Register Service Worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(registration => {
-          console.log('Service Worker registered with scope:', registration.scope);
-        })
-        .catch(err => {
-          console.error('Service Worker registration failed:', err);
-        });
-    });
-  }
-</script>
-
-</body>
-</html>
+                switch (randomType) {
+                    case 'jewish':
+                        thoughtData = jewishTeachings[Math.floor(Math.random() * jewishTeachings.length)];
+                        attributionText = `Jewish Teaching (${thoughtData.source})`;
+                        break;
+                    case 'islamic':
+                        thoughtData = islamicTeachings[Math.floor(Math.random() * islamicTeachings.length)];
+                        attributionText = `Islamic Teaching (${thoughtData.source})`;
+                        break;
+                    case 'famous':
+                        thoughtData = famousQuotes[Math.floor(Math.random() * famousQuotes.length)];
+                        attributionText = `Quote by ${thoughtData.source}`;
+                        break;
+                    case 'dangerfield':
+                        thoughtData = dangerfieldJokes[Math.floor(Math.random() * dangerfieldJokes.length)];
+                        attributionText = `One-liner by ${thoughtData.source}`;
+                        break;
+                    case 'wright':
+                        thoughtData = wrightJokes[Math.floor(Math.random() * wrightJokes.length)];
+                        attributionText = `One-liner by ${thoughtData.source}`;
+                        break;
+                    case 'zen':
+                    default: // Fallback to ZenQuotes if others fail or if 'zen' is chosen
+                        useZenApi = true;
+                        const proxyUrl = 'https://proxy.cors.sh/';
+                        const apiUrl = 'https://zenquotes.io/api/random';
+                        const response = await fetch(proxyUrl + apiUrl, {
+                             headers: { 'x-cors-api-key': 'temp_6c9b7c12d6357911e8c3281689b6f256' } // Use the provided temporary key
+                        });
+                        if (!response.ok) {
+                             console.error("ZenQuotes API Response Error Status:", response.status, response.statusText);
+                             let errorBody = "Unknown ZenQuotes API error";
+                             try { errorBody = await response.text(); console.error("ZenQuotes API Error Body:", errorBody); } catch (e) {}
+                             throw new Error(`ZenQuotes HTTP error ${response.
